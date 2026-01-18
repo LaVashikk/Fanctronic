@@ -69,25 +69,30 @@ function VecModeBuilder::Shoot(startPos, endPos, caller) {
     local projectile = LaunchedProjectile(particleEnt, eventName, this)
     local animationDuration = 0  
 
-    // todo: док коммент, что рекурсионно обрабатываем порталы / отражения
+    /**
+     * Recursively calculates the projectile's trajectory, handling portal translocations and surface reflections.
+     * Traces the path through multiple iterations to simulate bounces and portal traversal until max recursion depth or a blocking entity is hit.
+    */
     ::LastBallMode = this
     for(local recursion = 0; recursion < recursionDepth; recursion++) {
         local trace = TracePlus.PortalBbox(startPos, endPos, caller, TraceConfig)
 
-        local breakIt = false // todo: rename
+        local terminateTrajectory = false
         local portalTraces = trace.GetAggregatedPortalEntryInfo()
         foreach(iter, portalTrace in portalTraces.iter()) {
             animationDuration += projectile.moveBetween(portalTrace.GetStartPos(), portalTrace.GetHitPos(), animationDuration)
 
             local hitEnt = portalTrace.GetEntityClassname()
-            // todo comm: trigger_gravity - блокер, trigger_multiple это fizzler
+            // Entity collision resolution:
+            // - trigger_gravity: Acts as a solid obstacle, terminating the path.
+            // - trigger_multiple: Functions as a fizzler/disintegration field.
             if(hitEnt == "trigger_gravity" || hitEnt == "prop_physics" || hitEnt == "trigger_multiple") {
                 endPos = portalTrace.GetHitPos()
-                breakIt = true
+                terminateTrajectory = true
                 break 
             }
         }
-        if(breakIt || recursion == recursionDepth - 1) break
+        if(terminateTrajectory || recursion == recursionDepth - 1) break
 
         local surfaceNormal = trace.GetImpactNormal()
         local dirReflection = math.vector.reflect(trace.GetDir(), surfaceNormal)
@@ -101,7 +106,7 @@ function VecModeBuilder::Shoot(startPos, endPos, caller) {
 
     projectile.SoftKill(animationDuration)
 
-    //* todo to eng: Основная обработка попадания vecball в куб
+    //* Primary (or outdated, maybe) collision resolution logic for vecball-cube interactions
     // local hitFunc = function(endPos, handleHitFunc, particleEnt) {
     //     local cargo = entLib.FindByModelWithin("models/props/puzzlebox.mdl", endPos, 25)
     //     if(!cargo || !cargo.IsValid()) 

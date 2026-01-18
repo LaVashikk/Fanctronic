@@ -34,7 +34,7 @@
 }
 
 
-// Прямые интерфейсы, что не создают эффектов
+// Direct interfaces that bypass visual effect instantiation
 function vecBox::SetModeForce(modeBuilder) {
     this.SetUserData("ActivatedMode", modeBuilder)
     this.SetContext(modeBuilder.GetName(), 1) // For filters

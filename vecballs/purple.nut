@@ -67,12 +67,12 @@ purple.addRemoverFunc(function(cargo) {
     local isPurple = (fizzlerMode && fizzlerMode.GetName() == "purple")
 
     if (previousMode) {
-        // Если fizzlerMode существует, но он НЕ "purple" и НЕ равен previousMode,
-        // то ничего не делаем.
+        // If fizzlerMode exists but is NEITHER "purple" NOR equal to previousMode,
+        // we abort operation.
         if (fizzlerMode && fizzlerMode.GetName() != "purple" && fizzlerMode != previousMode) {
             return
         }
-    } else if (fizzlerMode && !isPurple) { // Выполнять только если это purple. Иначе -> выходим.
+    } else if (fizzlerMode && !isPurple) { // Execute only if it's purple. Otherwise -> abort.
         return
     }
 
@@ -80,18 +80,18 @@ purple.addRemoverFunc(function(cargo) {
     ScheduleEvent.TryCancel(eventName)
     cargo.SetIgnoreBalls(false)
 
-    // Теперь обрабатываем специфичную логику
+    // Proceeding with mode-specific logic
     if (previousMode) {
         if (isPurple) {
-            // Логика для Purple
+            // Logic for Purple
             dev.info("process as purple")
             previousMode.cargoRemoveEffects(cargo)
             cargo.DeactivateMode()
             cargo.SetContext(previousMode.GetName(), 0)
             cargo.SetUserData("iWasDestroyedByFizzlerMode", null)
         } else {
-            // Логика восстановления 
-            // Сюда попадаем, если !fizzlerMode или fizzlerMode == previousMode
+            // Restoration Logic 
+            // We land here if !fizzlerMode or fizzlerMode == previousMode
             if (fizzlerMode) dev.info("We have {}. process as def", fizzlerMode)
             cargo.ActivateMode(previousMode)
         }

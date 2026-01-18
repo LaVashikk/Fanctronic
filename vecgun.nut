@@ -19,8 +19,8 @@ class VectronicGun {
         
         this.owner = entLib.FromEntity(player);
 
-        // todo to eng: Таблица не может хранить числа в ключах, поэтому используем массив. 
-        // Так как нельзя дважды активировтаь один режим - мы храним в индексе только сам диспенсер
+        // Tables lack integer key support, necessitating an array structure.
+        // Since mode activation is idempotent, we map the index directly to the dispenser entity.
         this.usedDispancer = array(vecballCount, null)
 
         EventListener.Notify("vecgun_powered_on", player)
@@ -80,7 +80,7 @@ function VectronicGun::deactivateMode(idx) {
     
     EventListener.Notify("vecgun_mode_deactivated", idx)
     
-    // todo to eng: Запущенные шары этого режима дезентегрируются.
+    // Active projectiles belonging to this mode are marked for immediate disintegration.
     local name = projectileModes[idx].GetName()
     local needToRemove = List()
     foreach(idx, ball in this.activeProjectiles.iter()) {
