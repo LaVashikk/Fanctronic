@@ -56,7 +56,7 @@ function VectronicGun::Shoot() {
 function VectronicGun::activateMode(idx, dispancer = null) {
     idx = (idx - 1) % this.availablesModes.len() 
     if(this.availablesModes[idx]) 
-        return dev.log("[" + owner + "] This mode has already been activated: " + idx)
+        return dev.info("[" + owner + "] This mode has already been activated: " + idx)
     
     this.availablesModes[idx] = true
     this.SetMode(idx)
@@ -73,10 +73,10 @@ function VectronicGun::deactivateMode(idx) {
     idx -= 1
 
     if(availablesModes[idx] == false)
-        return dev.log("[" + owner + "] This mode has already been deactivated: " + idx)
+        return dev.info("[" + owner + "] This mode has already been deactivated: " + idx)
 
     this.availablesModes[idx] = false
-    if(currentMode == idx) 
+    if(this.currentMode == idx) 
         this.switchMode()
     
     EventListener.Notify("vecgun_mode_deactivated", idx)
@@ -119,7 +119,7 @@ function VectronicGun::resetModes() {
         availablesModes[idx] = false
     }
 
-    foreach(projectile in this.activeProjectiles){
+    foreach(projectile in this.activeProjectiles.iter()){
         projectile.Destroy()
     }
     this.activeProjectiles.clear()

@@ -1,17 +1,13 @@
 // IncludeScript("Fanctronic/pcapture-lib")
-IncludeScript("pcapture-lib/PCapture-Lib.nut") // TODO
+IncludeScript("PCapture-Lib/SRC/PCapture-Lib.nut") // TODO: 4.0 CR
 
 IncludeScript("Fanctronic/projectile")
 IncludeScript("Fanctronic/hit-controller")
 IncludeScript("Fanctronic/vecballs/main")
 IncludeScript("Fanctronic/vecgun")
 
-IncludeScript("Fanctronic/event-controller/GameEvent")
-IncludeScript("Fanctronic/event-controller/EventListener")
-IncludeScript("Fanctronic/event-controller/gameevents")
+IncludeScript("Fanctronic/event-controller/GameEvents")
 IncludeScript("Fanctronic/event-controller/hintevents")
-
-IncludeScript("Fanctronic/HUD-controller/controller")
 
 IncludeScript("Fanctronic/gameplay-elements/vecbox")
 IncludeScript("Fanctronic/gameplay-elements/dispenser")
@@ -22,19 +18,19 @@ IncludeScript("Fanctronic/gameplay-elements/fizzler")
 // Const
 const maxDistance = 3000
 const projectileSpeed = 16.6 // units per frame
-const recursionDepth = 8
+const recursionDepth = 4
 const maxProjectilesOnMap = 10
 const vecgunShootDelay = 0
 
+::LastBallMode <- -1
 ::TraceConfig <- TracePlus.Settings.new()
-TraceConfig.SetPriorityClasses(arrayLib(["trigger_gravity"]))
-TraceConfig.SetIgnoredModels(arrayLib(["portal_emitter"]))
-TraceConfig.SetErrorTolerance(1000)
-TraceConfig.SetCollisionFilter(function(ent, ballType) {
+TraceConfig.SetPriorityClasses(ArrayEx("trigger_gravity"))
+TraceConfig.SetIgnoredModels(ArrayEx("portal_emitter"))
+TraceConfig.SetCollisionFilter(function(ent) {
     if(ent.GetClassname() != "trigger_multiple") 
         return false
-    local vecballIdx = projectileModes.search(ballType) + 1
-    return ent.GetHealth() == vecballIdx || ent.GetHealth() == 999
+    local vecballIdx = projectileModes.search(LastBallMode) + 1
+    return ent.GetHealth() == vecballIdx || ent.GetHealth() == 999 // 999: it's a white fizzler
 })
 
 

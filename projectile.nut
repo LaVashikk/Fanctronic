@@ -70,8 +70,8 @@ function vecProjectile::Shoot(startPos, endPos, caller) {
 
         local breakIt = false
         local portalTraces = trace.GetAggregatedPortalEntryInfo()
-        foreach(iter, portalTrace in portalTraces) {
-            animationDuration += projectile.moveBetween(portalTrace.GetStartPos(), portalTrace.GetHitpos(), animationDuration)
+        foreach(iter, portalTrace in portalTraces.iter()) {
+            animationDuration += projectile.moveBetween(portalTrace.GetStartPos(), portalTrace.GetHitPos(), animationDuration)
 
             local hitEnt = portalTrace.GetEntityClassname()
             if(hitEnt == "trigger_gravity" || hitEnt == "prop_physics" || hitEnt == "trigger_multiple") {
@@ -86,10 +86,10 @@ function vecProjectile::Shoot(startPos, endPos, caller) {
         local dirReflection = math.vector.reflect(trace.GetDir(), surfaceNormal)
 
         local newEnd = endPos + dirReflection * maxDistance
-        endPos = TracePlus.Cheap(trace.GetHitpos(), newEnd).GetHitpos()
-        startPos = trace.GetHitpos() + surfaceNormal
+        endPos = TracePlus.Cheap(trace.GetHitPos(), newEnd).GetHitPos()
+        startPos = trace.GetHitPos() + surfaceNormal
         
-        particleEnt.EmitSoundEx("ParticleBall.Impact", animationDuration, eventName)
+        particleEnt.EmitSoundEx("ParticleBall.Impact", 10, false, animationDuration, eventName)
     }
 
     projectile.SoftKill(animationDuration)
@@ -107,8 +107,8 @@ function vecProjectile::Shoot(startPos, endPos, caller) {
     return projectile
 }
 
-function vecProjectile::playParticle(particleName, originPos) {
-    local particle = entLib.FindByName(dev.format("@{}-{}", this.type, particleName)) 
+function vecProjectile::PlayParticle(particleName, originPos) {
+    local particle = entLib.FindByName(macros.format("@{}-{}", this.name, particleName)) 
 
     particle.SetOrigin(originPos)
     EntFireByHandle(particle, "Stop")
