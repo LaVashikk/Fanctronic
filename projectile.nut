@@ -97,9 +97,9 @@ function VecModeBuilder::Shoot(startPos, endPos, caller) {
         local surfaceNormal = trace.GetImpactNormal()
         local dirReflection = math.vector.reflect(trace.GetDir(), surfaceNormal)
 
-        local newEnd = endPos + dirReflection * MAX_DISTANCE
-        endPos = TracePlus.Cheap(trace.GetHitPos(), newEnd).GetHitPos()
-        startPos = trace.GetHitPos() + surfaceNormal
+        startPos = trace.GetHitPos() + surfaceNormal * 5
+        local newEnd = trace.GetHitPos() + dirReflection * MAX_DISTANCE
+        endPos = TracePlus.Cheap(startPos, newEnd).GetHitPos()
         
         particleEnt.EmitSoundEx("ParticleBall.Impact", 10, false, animationDuration, eventName)
     }
