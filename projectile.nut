@@ -80,7 +80,7 @@ function VecModeBuilder::Shoot(startPos, endPos, caller) {
         local terminateTrajectory = false
         local portalTraces = trace.GetAggregatedPortalEntryInfo()
         foreach(iter, portalTrace in portalTraces.iter()) {
-            animationDuration += projectile.moveBetween(portalTrace.GetStartPos(), portalTrace.GetHitPos(), animationDuration)
+            animationDuration += projectile.moveBetween(portalTrace.GetStartPos(), portalTrace.GetHitPos(), animationDuration, recursion)
 
             local hitEnt = portalTrace.GetEntityClassname()
             // Entity collision resolution:
@@ -167,7 +167,14 @@ function VecModeBuilder::_createProjectileParticle() {
 
     function Destroy() {
         if(this.IsValid() == false) return
-        ScheduleEvent.Cancel(this.eventName)
+        for(local idx=0; idx <= RECURSION_DEPTH; idx++) {
+            local name = (this.eventName + "-" + idx)
+            if(ScheduleEvent.IsValid(name)) {
+                dev.info("Destroying: {}", name)
+                ScheduleEvent.Cancel(name)
+            }
+        }
+        ScheduleEvent.TryCancel(this.eventName)
         this.particleEnt.Destroy()
     }
 
@@ -177,12 +184,12 @@ function VecModeBuilder::_createProjectileParticle() {
     }
 
     function IsValid() {
-        return ScheduleEvent.IsValid(this.eventName) && this.particleEnt.IsValid()
+        return (ScheduleEvent.IsValid(this.eventName) || ScheduleEvent.IsValid(this.eventName + "-0")) && this.particleEnt.IsValid()
     }
 
-    function moveBetween(startPos, endPos, delay = 0) {
+    function moveBetween(startPos, endPos, delay = 0, index = 0) {
         return animate.RT.PositionTransitionBySpeed(this.particleEnt, startPos, endPos, 
-            PROJECTILE_SPEED, {eventName = this.eventName, globalDelay = delay}) // TODO: eventname opti
+            PROJECTILE_SPEED, {eventName = this.eventName + "-" + index, globalDelay = delay}) // TODO: eventname opti
     }
 
     function GetName() {

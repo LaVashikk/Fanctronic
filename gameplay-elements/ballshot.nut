@@ -31,12 +31,12 @@ function BallShoot() : (ballshotsModes) {
 
     // Sprite animate // todo
     local sprite = caller.GetNamePrefix() + "sprite"
-    animate.RT.AlphaTransition(sprite, 50, 255, 0.1, {eventName=UniqueString()})
-    animate.RT.AlphaTransition(sprite, 255, 50, 0.7, {eventName=UniqueString(), globalDelay = 0.15})
+    animate.RT.AlphaTransition(sprite, 50, 255, 0.1, {eventName=UniqueString("ballshot-alpha")})
+    animate.RT.AlphaTransition(sprite, 255, 50, 0.7, {eventName=UniqueString("ballshot-alpha"), globalDelay = 0.15})
 
     local shotter = caller.GetNamePrefix() + "*"
     local color = macros.StrToVec(caller.GetColor())
     local newColor = math.vector.clamp(color * 0.5, 0, 255)
-    animate.RT.ColorTransition(shotter, color, newColor, 0.1. {eventName=UniqueString()})
-    animate.RT.ColorTransition(shotter, newColor, color, 0.7, {eventName=UniqueString(), globalDelay = 0.35})
+    animate.RT.ColorTransition(shotter, color, newColor, 0.1. {eventName=UniqueString("ballshot-alpha")})
+    animate.RT.ColorTransition(shotter, newColor, color, 0.7, {eventName=UniqueString("ballshot-alpha"), globalDelay = 0.35})
 }

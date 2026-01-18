@@ -21,7 +21,7 @@ function VecballHitController() {
     local shouldRemove = List()
 
     foreach(idx, projectile in projectileCount.iter()) {
-        if(projectile.IsValid() == false) {
+        if(!projectile || !projectile.IsValid()) {
             shouldRemove.insert(0, idx)
             continue
         } 
