@@ -44,8 +44,8 @@ function disableDispancer() {
 }
 
 function touchDispancer(mode) {
-    if((activator in vecgunOwners) == false) 
+    if((activator in ::VECGUN_OWNERS) == false) 
         return
-    local vecgun = vecgunOwners[activator]
+    local vecgun = ::VECGUN_OWNERS[activator]
     vecgun.activateMode(mode, caller)
 }

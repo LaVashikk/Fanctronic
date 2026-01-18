@@ -73,9 +73,9 @@ function VecModeBuilder::Shoot(startPos, endPos, caller) {
      * Recursively calculates the projectile's trajectory, handling portal translocations and surface reflections.
      * Traces the path through multiple iterations to simulate bounces and portal traversal until max recursion depth or a blocking entity is hit.
     */
-    ::LastBallMode = this
-    for(local recursion = 0; recursion < recursionDepth; recursion++) {
-        local trace = TracePlus.PortalBbox(startPos, endPos, caller, TraceConfig)
+    ::LAST_BALL_MODE = this
+    for(local recursion = 0; recursion < RECURSION_DEPTH; recursion++) {
+        local trace = TracePlus.PortalBbox(startPos, endPos, caller, ::TRACE_CONFIG)
 
         local terminateTrajectory = false
         local portalTraces = trace.GetAggregatedPortalEntryInfo()
@@ -92,12 +92,12 @@ function VecModeBuilder::Shoot(startPos, endPos, caller) {
                 break 
             }
         }
-        if(terminateTrajectory || recursion == recursionDepth - 1) break
+        if(terminateTrajectory || recursion == RECURSION_DEPTH - 1) break
 
         local surfaceNormal = trace.GetImpactNormal()
         local dirReflection = math.vector.reflect(trace.GetDir(), surfaceNormal)
 
-        local newEnd = endPos + dirReflection * maxDistance
+        local newEnd = endPos + dirReflection * MAX_DISTANCE
         endPos = TracePlus.Cheap(trace.GetHitPos(), newEnd).GetHitPos()
         startPos = trace.GetHitPos() + surfaceNormal
         
@@ -157,7 +157,7 @@ function VecModeBuilder::_createProjectileParticle() {
         this.modeBuilder = VecModeBuilder
 
         // An optional functionality, created purely for the sake of optimization
-        if(::projectileCount.len() > maxProjectilesOnMap) {
+        if(::projectileCount.len() > MAX_PROJECTILES_ON_MAP) {
             local oldestProjectile = ::projectileCount.first()
             if(oldestProjectile.IsValid()) oldestProjectile.Destroy()
             ::projectileCount.remove(0)
@@ -182,7 +182,7 @@ function VecModeBuilder::_createProjectileParticle() {
 
     function moveBetween(startPos, endPos, delay = 0) {
         return animate.RT.PositionTransitionBySpeed(this.particleEnt, startPos, endPos, 
-            projectileSpeed, {eventName = this.eventName, globalDelay = delay}) // TODO: eventname opti
+            PROJECTILE_SPEED, {eventName = this.eventName, globalDelay = delay}) // TODO: eventname opti
     }
 
     function GetName() {

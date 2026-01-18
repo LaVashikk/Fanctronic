@@ -1,7 +1,7 @@
 local _playerFizzle = function(modeIdx) {
-    if((activator in vecgunOwners) == false) 
+    if((activator in ::VECGUN_OWNERS) == false) 
         return
-    local vecgun = vecgunOwners[activator]        
+    local vecgun = ::VECGUN_OWNERS[activator]        
     vecgun.deactivateMode(modeIdx)
 }
 
@@ -36,8 +36,8 @@ function vecFizzle(modeIdx = null) : (_playerFizzle, _cubeFizzle) {
 
 function vecFizzleAll() : (_cubeFizzle) {
     if(activator.GetClassname() == "player") 
-        if(activator in vecgunOwners)
-            return vecgunOwners[activator].resetModes()
+        if(activator in ::VECGUN_OWNERS)
+            return ::VECGUN_OWNERS[activator].resetModes()
 
     local cargo = vecBox(activator)
     if(cargo.GetModeName() == "purple") { //! hard-code

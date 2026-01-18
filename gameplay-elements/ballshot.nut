@@ -25,7 +25,7 @@ function BallShoot() : (ballshotsModes) {
     local vecball = ballshotsModes[caller]
 
     local start = caller.GetOrigin() + caller.GetForwardVector() * 30
-    local end = start + caller.GetForwardVector() * maxDistance
+    local end = start + caller.GetForwardVector() * MAX_DISTANCE
 
     vecball.Shoot(start, end, caller)
 

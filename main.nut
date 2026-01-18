@@ -16,34 +16,34 @@ IncludeScript("Fanctronic/gameplay-elements/fizzler")
 
 
 // Const
-const maxDistance = 3000
-const projectileSpeed = 16.6 // units per frame
-const recursionDepth = 4
-const maxProjectilesOnMap = 10
-const vecgunShootDelay = 0
+const MAX_DISTANCE = 3000
+const PROJECTILE_SPEED = 16.6 // units per frame
+const RECURSION_DEPTH = 4
+const MAX_PROJECTILES_ON_MAP = 10
+const VECGUN_SHOOT_DELAY = 0
 
-::LastBallMode <- -1
-::TraceConfig <- TracePlus.Settings.new()
-TraceConfig.SetPriorityClasses(ArrayEx("trigger_gravity"))
-TraceConfig.SetIgnoredModels(ArrayEx("portal_emitter"))
-TraceConfig.SetCollisionFilter(function(ent) {
+::LAST_BALL_MODE <- -1
+::TRACE_CONFIG <- TracePlus.Settings.new()
+TRACE_CONFIG.SetPriorityClasses(ArrayEx("trigger_gravity"))
+TRACE_CONFIG.SetIgnoredModels(ArrayEx("portal_emitter"))
+TRACE_CONFIG.SetCollisionFilter(function(ent) {
     if(ent.GetClassname() != "trigger_multiple") 
         return false
 
-    local vecballIdx = projectileModes.search(LastBallMode) + 1
+    local vecballIdx = projectileModes.search(::LAST_BALL_MODE) + 1
     return ent.GetHealth() == vecballIdx || ent.GetHealth() == 999 // 999: it's a white fizzler
 })
 
 
 // TODO COMMENT
-::vecgunOwners <- {}
+::VECGUN_OWNERS <- {}
 
 function giveVecGun(player) { // todo
-    if(player in vecgunOwners) 
+    if(player in ::VECGUN_OWNERS) 
         return dev.warning(player + " already has vecgun.")
     
     local vecgun = VectronicGun(player)
-    vecgunOwners[player] <- vecgun
+    ::VECGUN_OWNERS[player] <- vecgun
 
     local gameui = entLib.CreateByClassname("game_ui", {FieldOfView = -1});
     gameui.ConnectOutputEx("PressedAttack", function() : (vecgun) {

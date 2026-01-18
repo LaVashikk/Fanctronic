@@ -39,11 +39,11 @@ class VectronicGun {
 function VectronicGun::Shoot() {
     if(this.currentMode == null) 
         return EventListener.Notify("vecgun_no_projectile", this.owner)
-    if(Time() < this.lastShoot + vecgunShootDelay)
+    if(Time() < this.lastShoot + VECGUN_SHOOT_DELAY)
         return EventListener.Notify("vecgun_recharge")
 
     local start = this.owner.EyePosition() 
-    local end = start + this.owner.EyeForwardVector() * maxDistance
+    local end = start + this.owner.EyeForwardVector() * MAX_DISTANCE
     local projectile = this.GetBuilder().Shoot(start, end, this.owner)
 
     this.activeProjectiles.append(projectile)
