@@ -29,6 +29,7 @@ TraceConfig.SetIgnoredModels(ArrayEx("portal_emitter"))
 TraceConfig.SetCollisionFilter(function(ent) {
     if(ent.GetClassname() != "trigger_multiple") 
         return false
+
     local vecballIdx = projectileModes.search(LastBallMode) + 1
     return ent.GetHealth() == vecballIdx || ent.GetHealth() == 999 // 999: it's a white fizzler
 })

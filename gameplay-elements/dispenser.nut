@@ -10,7 +10,7 @@ function initDispancer(mode) {
     local basePoint = entLib.FindByName(prefix + "dispenser_particle")
     local vecballPoint = entLib.FindByName(prefix + "dispenser_vecball")
 
-    local colorPrefix = "@" + ballMode.GetType() + "-"
+    local colorPrefix = "@" + ballMode.GetName() + "-"
 
     entLib.FindByName(colorPrefix + "dispancer-spawn").SpawnEntity()
     local baseFX = entLib.FindByName(colorPrefix + "dispancer-base")

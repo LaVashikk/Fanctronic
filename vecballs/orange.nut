@@ -1,15 +1,7 @@
-local orange = vecProjectile("orange", "193 183 123")
+local orange = VecModeBuilder("orange", "255 80 20")
 orange.addHandleFunc(function(cargo) {
-    if(cargo.ShouldIgnoreVecBalls()) {
-        return cargo.EmitSound("ParticleBall.Explosion")
-    }
+    return cargo.EmitSound("ParticleBall.Explosion")
     
-    if(cargo.GetModeType() != null) {
-        cargo.ResetModes(cargo.ShouldHardReset())
-    }
-
-    cargo.ActivateMode(this)
-    cargo.Dissolve()
 })
 
 orange.addRemoverFunc(function(_) {})

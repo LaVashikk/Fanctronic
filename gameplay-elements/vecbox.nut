@@ -7,12 +7,11 @@
         this.CBaseEntity = CPcapEntity.CBaseEntity
     }
 
-    function SetMode(type) null
-    function ActivateMode(type) null
+    function SetMode(modeBuilder) null
+    function ActivateMode(modeBuilder) null
     function DeactivateMode(hardReset) null
-    function ResetModes(hardReset) null
-    function GetMode() vecProjectile
-    function GetModeType() string
+    function GetMode() VecModeBuilder
+    function GetModeName() string
 
     function ShouldHardReset() bool
     function ShouldIgnoreVecBalls() bool
@@ -26,7 +25,7 @@
     function GetGhost() pcapEntity
 
     function _tostring() {
-        return "pcapEntity: " + this.CBaseEntity + ""
+        return "VecBox: " + this.CBaseEntity + ""
     }
 
     function _typeof() {
@@ -35,93 +34,73 @@
 }
 
 
-
-function vecBox::SetMode(type) {
-    this.SetUserData("ActivatedMode", type)
-    this.SetContext(type.GetType(), 1) // For filters
+// Прямые интерфейсы, что не создают эффектов
+function vecBox::SetModeForce(modeBuilder) {
+    this.SetUserData("ActivatedMode", modeBuilder)
+    this.SetContext(modeBuilder.GetName(), 1) // For filters
 }
 
-function vecBox::ActivateMode(type) {
-    this.SetMode(type)
-    type.playParticle("vecbox", this.GetOrigin())
+function vecBox::ResetModeForce() {
+    if(this.GetMode() == null) return
 
-    animate.ColorTransition(this, this.GetColor(), type.color, 0.3, {eventName = this.CPcapEntity.CBaseEntity})
+    local currentMode = this.GetMode()
+    this.SetUserData("ActivatedMode", null)
+    this.SetContext(currentMode.GetName(), 0)
+    currentMode.cargoRemoveEffects(this)
+}
+
+
+// 
+function vecBox::ActivateMode(modeBuilder) { // rename
+    this.SetModeForce(modeBuilder)
+    modeBuilder.PlayParticle("vecbox", this.GetOrigin())
+
+    animate.ColorTransition(this, this.GetColor(), modeBuilder.color, 0.3, {eventName = this.CBaseEntity})
     this.EmitSound("VecBox.Activate")
 }
 
-function vecBox::DeactivateMode(hardReset = false) {
-    if(this.GetMode() == null)
-        return
+function vecBox::DeactivateMode() {    
+    this.ResetModeForce()
     
-    this.ResetModes(hardReset)
-    animate.ColorTransition(this, this.GetColor(), "255 255 255", 0.5, {eventName = this.CPcapEntity.CBaseEntity}) // TODO hard code?
+    animate.ColorTransition(this, this.GetColor(), "255 255 255", 0.5, {eventName = this.CBaseEntity})
     this.EmitSound("VecBox.Deactivate")
-    defaultVecball.playParticle("vecbox", this.GetOrigin())
+    defaultVecball.PlayParticle("vecbox", this.GetOrigin())
 }
-
-function vecBox::ResetModes(hardReset = false) {
-    local currentMode = this.GetMode()
-
-    //? hard code?
-    this.SetUserData("ActivatedMode", null)
-    this.SetUserData("ShouldHardReset", false)
-    this.SetUserData("ShouldIgnoreVecBalls", false)
-
-    foreach(mode in projectileModes) {
-        if(mode == currentMode || hardReset) {
-            mode.cargoRemoveEffects(this)
-            this.SetContext(mode.GetType(), 0)
-        }
-    }
-}
-
 
 // todo
-function vecBox::ShouldHardReset() {
-    return this.GetUserData("ShouldHardReset")
-}
-
-function vecBox::ShouldIgnoreVecBalls() {
+function vecBox::ShouldIgnore() {
     return this.GetUserData("ShouldIgnoreVecBalls")
 }
 
-function vecBox::EnableHardReset() {
-    this.SetUserData("ShouldHardReset", true)
+function vecBox::SetIgnoreBalls(bool) {
+    this.SetUserData("ShouldIgnoreVecBalls", bool)
 }
-
-function vecBox::EnableIgnoreVecBalls() {
-    this.SetUserData("ShouldIgnoreVecBalls", true)
-}
-
 
 function vecBox::GetMode() {
     return this.GetUserData("ActivatedMode")
 }
 
-function vecBox::GetModeType() {
+function vecBox::GetModeName() {
     local mode = this.GetMode()
-    return mode ? mode.GetType() : null
+    return mode ? mode.GetName() : null
 }
-
-
 
 // todo
-function vecBox::DisableGravity() {
-    EntFire("@gravity_zero", "Disable", "")
-    EntFire("@gravity_zero", "Enable", "", 0.03)
-    EntFireByHandle(this, "wake")
+function vecBox::SetLevitation(active) {
+    if(active) {
+        EntFire("@gravity_zero", "Disable", "")
+        EntFire("@gravity_zero", "Enable", "", 0.03)
+        EntFireByHandle(this, "wake")
+    
+        this.SetContext("ingravity", 1)
+    } else {
+        EntFire("@gravity_zero", "Disable", "")
+        EntFire("@gravity_zero", "Enable", "", 0.06)
+        EntFireByHandle(this, "wake")
 
-    this.SetContext("ingravity", 1)
+        this.SetContext("ingravity", 0, 0.03)
+    }
 }
-
-function vecBox::EnableGravity() {
-    EntFire("@gravity_zero", "Disable", "")
-    EntFire("@gravity_zero", "Enable", "", 0.06)
-    EntFireByHandle(this, "wake")
-
-    this.SetContext("ingravity", 0, 0.03)
-}
-
 
 function vecBox::CreateGhost() {
     entLib.FindByName("@green_spawn").SpawnEntity()
@@ -130,13 +109,13 @@ function vecBox::CreateGhost() {
     ghost.SetUniqueName()
 
     ghost.SetOrigin(this.GetOrigin())
-    ghost.SetAbsAngles(this.GetAngles())
+    ghost.SetAngles2(this.GetAngles())
     ghost.SetColor(this.GetMode().GetColor())
     ghost.SetCollisionGroup(12)
     animate.AlphaTransition(ghost, 0, 255, 0.15)
 
     local workaround = entLib.FindByClassnameWithin("trigger_multiple", this.GetOrigin(), 1)
-    workaround.addOutput("OnEndTouchAll", ghost, "AddOutput", "CollisionGroup 24")
+    workaround.AddOutput("OnEndTouchAll", ghost, "AddOutput", "CollisionGroup 24")
 
     this.SetUserData("ghostCargo", ghost)
 }
@@ -147,10 +126,9 @@ function vecBox::GetGhost() {
 
 
 
-// DID YOU KNOW THAT CLASS EXTENSION BREAKS THE GAME ON SAVE/LOAD? AND I DIDN'T KNOW! THAT'S WHY I HAD TO USE THIS FUCKING WORKAROUND!!!!
+// DID YOU KNOW THAT CLASS EXTENSION BREAKS THE GAME ON SAVE/LOAD? AND I DIDN'T KNOW! THAT'S WHY I HAD TO USE THIS FCKING WORKAROUND (wrapper)!!!!
 // More info: https://discord.com/channels/262311619428614144/263051788767199232/1211025106076307569
-function vecBox::EmitSound(sound_name) this.CBaseEntity.EmitSound(sound_name)
-
+//* CBaseEntity methods
 function vecBox::GetAngles() return this.CBaseEntity.GetAngles()
 function vecBox::GetAngularVelocity() return this.CBaseEntity.GetAngularVelocity()
 function vecBox::GetBoundingMaxs() return this.CBaseEntity.GetBoundingMaxs()
@@ -168,6 +146,7 @@ function vecBox::GetOrigin() return this.CBaseEntity.GetOrigin()
 function vecBox::GetScriptId() return this.CBaseEntity.GetScriptId()
 function vecBox::GetUpVector() return this.CBaseEntity.GetUpVector()
 function vecBox::ValidateScriptScope() return this.CBaseEntity.ValidateScriptScope()
+function vecBox::EmitSound(sound_name) this.CBaseEntity.EmitSound(sound_name)
 
 function vecBox::SetAbsOrigin(vector) this.CBaseEntity.SetAbsOrigin(vector)
 function vecBox::SetForwardVector(vector) this.CBaseEntity.SetForwardVector(vector)
@@ -176,17 +155,21 @@ function vecBox::SetMaxHealth(health) this.CBaseEntity.SetMaxHealth(health)
 function vecBox::SetModel(model_name) this.CBaseEntity.SetModel(model_name)
 function vecBox::SetOrigin(vector) this.CBaseEntity.SetOrigin(vector)
 
-// pcapEnt func
-function vecBox::Destroy() this.CPcapEntity.Destroy()
+//* PcapEntity methods
+function vecBox::IsEqual(other) return this.CPcapEntity.IsEqual(other)
 function vecBox::Kill(fireDelay = 0) this.CPcapEntity.Kill(fireDelay)
-function vecBox::Dissolve() this.CPcapEntity.Dissolve()
+function vecBox::Dissolve(fireDelay = 0) this.CPcapEntity.Dissolve(fireDelay)
 function vecBox::addOutput(outputName, target, input, param = "", delay = 0, fires = -1) this.CPcapEntity.addOutput(outputName, target, input, param, delay, fires)
 function vecBox::ConnectOutputEx(outputName, script, delay = 0, fires = -1) this.CPcapEntity.ConnectOutputEx(outputName, script, delay, fires)
-function vecBox::EmitSoundEx(sound_name, timeDelay = 0, eventName = this) this.CPcapEntity.EmitSoundEx(sound_name, timeDelay, eventName)
+function vecBox::EmitSoundEx(sound_name, volume = 10, isLoop = false, timeDelay = 0, eventName = this) this.CPcapEntity.EmitSoundEx(sound_name, volume, isLoop, timeDelay, eventName)
+function vecBox::SetTraceIgnore(bool) this.CPcapEntity.SetTraceIgnore(bool)
+function vecBox::Disable(fireDelay = 0) this.CPcapEntity.Disable(fireDelay)
+function vecBox::Enable(fireDelay = 0) this.CPcapEntity.Enable(fireDelay)
+
 
 function vecBox::SetKeyValue(key, value) this.CPcapEntity.SetKeyValue(key, value)
 function vecBox::SetAngles(x, y, z) this.CPcapEntity.SetAngles(x, y, z)
-function vecBox::SetAbsAngles(vector) this.CPcapEntity.SetAbsAngles(vector)
+function vecBox::SetAngles2(vector) this.CPcapEntity.SetAngles2(vector)
 function vecBox::SetName(name) this.CPcapEntity.SetName(name)
 function vecBox::SetUniqueName(prefix = "a") this.CPcapEntity.SetUniqueName(prefix)
 function vecBox::SetParent(parentEnt, fireDelay = 0) this.CPcapEntity.SetParent(parentEnt, fireDelay)
@@ -200,15 +183,21 @@ function vecBox::SetDrawEnabled(isEnabled, fireDelay = 0) this.CPcapEntity.SetDr
 function vecBox::SetSpawnflags(flag) this.CPcapEntity.SetSpawnflags(flag)
 function vecBox::SetModelScale(scaleValue, fireDelay = 0) this.CPcapEntity.SetModelScale(scaleValue, fireDelay)
 function vecBox::SetCenter(vector) this.CPcapEntity.SetCenter(vector)
+function vecBox::SetAbsOrigin2(vector) this.CPcapEntity.SetAbsOrigin2(vector)
+function vecBox::SetAbsCenter(vector) this.CPcapEntity.SetAbsCenter(vector)
 function vecBox::SetBBox(minBounds, maxBounds) this.CPcapEntity.SetBBox(minBounds, maxBounds)
 function vecBox::SetContext(name, value, fireDelay = 0) this.CPcapEntity.SetContext(name, value, fireDelay)
 function vecBox::SetUserData(name, value) this.CPcapEntity.SetUserData(name, value)
+function vecBox::entindex() return this.CBaseEntity.entindex()
+function vecBox::GetScriptScope() return this.CBaseEntity.GetScriptScope()
 
-function vecBox::IsValid() return this.CPcapEntity.IsValid()
+function vecBox::IsValid() return CBaseEntity && CPcapEntity && CPcapEntity.IsValid()
 function vecBox::IsPlayer() return this.CPcapEntity.IsPlayer()
 function vecBox::GetUserData(name) return this.CPcapEntity.GetUserData(name)
 function vecBox::GetBBox() return this.CPcapEntity.GetBBox()
+function vecBox::GetBoundingCenter() return this.CPcapEntity.GetBoundingCenter()
 function vecBox::GetAABB() return this.CPcapEntity.GetAABB()
+function vecBox::CreateAABB(int) return this.CPcapEntity.CreateAABB(int)
 function vecBox::GetIndex() return this.CPcapEntity.GetIndex()
 function vecBox::GetKeyValue(key) return this.CPcapEntity.GetKeyValue(key)
 function vecBox::GetSpawnflags() return this.CPcapEntity.GetSpawnflags()
@@ -216,4 +205,6 @@ function vecBox::GetAlpha() return this.CPcapEntity.GetAlpha()
 function vecBox::GetColor() return this.CPcapEntity.GetColor()
 function vecBox::GetSkin() return this.CPcapEntity.GetSkin()
 function vecBox::GetNamePrefix() return this.CPcapEntity.GetNamePrefix()
-function vecBox::GetNamePostfix() return this.CPcapEntity.GetNamePostfix()
+function vecBox::GetNamePostfix() return this.CPcapEntity.GetNamePostfix()  
+function vecBox::GetModelScale() return this.CPcapEntity.GetModelScale()
+function vecBox::GetBBoxPoints() return this.CPcapEntity.GetBBoxPoints()

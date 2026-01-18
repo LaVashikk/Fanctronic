@@ -1,4 +1,4 @@
-local ball = vecProjectile("ballName", "255 125 125")
+local ball = VecModeBuilder("ballName", "255 125 125")
 
 // This function will be called when Vecball hits the cargo
 ball.addHandleFunc(function(cargo) {
@@ -6,7 +6,7 @@ ball.addHandleFunc(function(cargo) {
     if(cargo.ShouldIgnoreVecBalls()) {
         return cargo.EmitSound("ParticleBall.Explosion")
     }
-    // To turn ignore on - just type: `cargo.EnableIgnoreVecBalls()`, to disable: cargo.ResetModes/DeactivateMode
+    // To turn ignore on - just type: `cargo.EnableIgnoreVecBalls()`, to disable: cargo.ResetMode
 
     // For toggle-mode:
     // if(cargo.GetModeType() == "ballName") { // or `== this.GetType()`
@@ -14,7 +14,7 @@ ball.addHandleFunc(function(cargo) {
     // }
 
     if(cargo.GetModeType() != null) {
-        cargo.ResetModes(cargo.ShouldHardReset())
+        cargo.ResetMode(cargo.ShouldHardReset())
     }
 
     // your logic

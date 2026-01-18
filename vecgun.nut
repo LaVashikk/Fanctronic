@@ -15,14 +15,13 @@ class VectronicGun {
         local vecballCount = projectileModes.len()
 
         this.availablesModes = array(vecballCount, false)
-        this.activeProjectiles = List()
+        this.activeProjectiles = List() 
         
         this.owner = entLib.FromEntity(player);
 
-        this.usedDispancer = List()
-        for(local i = 0; i < vecballCount; i++) {
-            this.usedDispancer.append(List())
-        }
+        // todo to eng: Таблица не может хранить числа в ключах, поэтому используем массив. 
+        // Так как нельзя дважды активировтаь один режим - мы храним в индексе только сам диспенсер
+        this.usedDispancer = array(vecballCount, null)
 
         EventListener.Notify("vecgun_powered_on", player)
     }
@@ -33,19 +32,19 @@ class VectronicGun {
     function SetMode(idx) null
     function resetModes() null
     function switchMode() null
-    function GetBall() null
+    function GetBuilder() null
 }
 
 
 function VectronicGun::Shoot() {
     if(this.currentMode == null) 
-        return EventListener.Notify("vecgun_no_projectile")
+        return EventListener.Notify("vecgun_no_projectile", this.owner)
     if(Time() < this.lastShoot + vecgunShootDelay)
         return EventListener.Notify("vecgun_recharge")
 
     local start = this.owner.EyePosition() 
     local end = start + this.owner.EyeForwardVector() * maxDistance
-    local projectile = this.GetBall().Shoot(start, end, this.owner)
+    local projectile = this.GetBuilder().Shoot(start, end, this.owner)
 
     this.activeProjectiles.append(projectile)
     this.lastShoot = Time()
@@ -65,7 +64,7 @@ function VectronicGun::activateMode(idx, dispancer = null) {
 
     if(dispancer) {
         EntFireByHandle(dispancer, "FireUser2")
-        this.usedDispancer[idx].append(dispancer)
+        this.usedDispancer[idx] = dispancer
     }
 }
 
@@ -81,32 +80,31 @@ function VectronicGun::deactivateMode(idx) {
     
     EventListener.Notify("vecgun_mode_deactivated", idx)
     
-    local type = projectileModes[idx].GetType()
-    for(local idx = 0; idx < this.activeProjectiles.len(); idx++) { // TODO Oh no, junk code :<
-        local ball = this.activeProjectiles[idx]
-        if(ball.IsValid() == false) {
-            this.activeProjectiles.remove(idx)
-            idx--
+    // todo to eng: Запущенные шары этого режима дезентегрируются.
+    local name = projectileModes[idx].GetName()
+    local needToRemove = List()
+    foreach(idx, ball in this.activeProjectiles.iter()) {
+        if(ball.IsValid() == false) { // Garbage collector
+            needToRemove.insert(0, idx) 
             continue
         }
-
-        if(ball.GetType() == type) {
+        if(ball.GetName() == name) {
+            needToRemove.insert(0, idx) 
             ball.Destroy()
-            this.activeProjectiles.remove(idx)
-            idx--
         }
     }
 
-    local dispancers = this.usedDispancer[idx]
-    foreach(dispancer in dispancers){
-        EntFireByHandle(dispancer, "FireUser1")
+    foreach(idx in needToRemove.iter()) {
+        this.activeProjectiles.remove(idx)
     }
-    dispancers.clear()
+
+    // restore dispancer
+    EntFireByHandle(this.usedDispancer[idx], "FireUser1")
 }
 
 function VectronicGun::SetMode(idx) {
     this.currentMode = idx
-    // TODO viewmodel logic
+    // TODO viewmodel logic, add events here
 }
 
 function VectronicGun::resetModes() {
@@ -125,18 +123,15 @@ function VectronicGun::resetModes() {
     this.activeProjectiles.clear()
 
     foreach(dispancers in this.usedDispancer){
-        foreach(dispancer in dispancers){
-            EntFireByHandle(dispancer, "FireUser1")
-        }
-        dispancers.clear()
+        EntFireByHandle(dispancer, "FireUser1")
     }
     
-    this.owner.EmitSound("Weapon_VecGun.Fizzle")
+    this.owner.EmitSound("Weapon_VecGun.Fizzle") // todo: add event here
 }
 
 function VectronicGun::switchMode() {
     if(this.currentMode == null)
-        return EventListener.Notify("vecgun_no_projectile")
+        return EventListener.Notify("vecgun_no_projectile", this.owner)
 
     local startIndex = this.currentMode
     local nextMode = null
@@ -153,7 +148,7 @@ function VectronicGun::switchMode() {
         if(this.availablesModes[startIndex] == false) {
             return this.currentMode = null
         }
-        else return EventListener.Notify("vecgun_no_alternate_projectile")
+        else return EventListener.Notify("vecgun_no_alternate_projectile", this.owner)
     }
     
     // TODO
@@ -162,6 +157,6 @@ function VectronicGun::switchMode() {
     EventListener.Notify("vecgun_mode_switched", nextMode)
 }
 
-function VectronicGun::GetBall() {
+function VectronicGun::GetBuilder() {
     return projectileModes[this.currentMode]
 }

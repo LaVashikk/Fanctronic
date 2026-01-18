@@ -1,19 +1,24 @@
-class vecProjectile {
+class VecModeBuilder {
     particleMaker = null;
-    type = null;
+    name = null;
     color = null;
 
     handleHitFunc = null;
     removeEffectsFunc = null;
 
-    constructor(type, color, handleFunc = null) {
+    constructor(name, color, handleFunc = null) {
         this.color = color
-        this.type = type
+        this.name = name
         this.handleHitFunc = handleFunc
 
-        this.particleMaker = entLib.FindByName(dev.format("@{}-projectile-spawn", type)) 
+        this.particleMaker = entLib.FindByName(macros.format("@{}-projectile-spawn", name)) 
 
-        entLib.FindByName(dev.format("@{}-colorPoint", type)).SetOrigin(StrToVec(color))
+        local colorPoint = entLib.FindByName(macros.format("@{}-colorPoint", name))
+        if(colorPoint) {
+            colorPoint.SetOrigin(macros.StrToVec(color))
+        } else {
+            dev.error("No color point for {} ({})", name, color)
+        }
     }
 
     function addHandleFunc(func) null
@@ -21,61 +26,63 @@ class vecProjectile {
     function cargoRemoveEffects(cargo) null
 
     function GetStatus() bool
-    function GetType() string
+    function GetName() string
     function GetColor() string
     
     function Shoot(startPos, endPos, caller) null
-    function playParticle(particleName, originPos) pcapEnt
+    function PlayParticle(particleName, originPos) pcapEnt
 
     function _createProjectileParticle() null
-    function _tostring() return "vecProjectile: " + type
+    function _tostring() return "VecModeBuilder: " + name
 }
 
 
 // Setters & Getters
-function vecProjectile::addHandleFunc(func) {
+function VecModeBuilder::addHandleFunc(func) {
     this.handleHitFunc = func
 }
 
-function vecProjectile::addRemoverFunc(func) {
+function VecModeBuilder::addRemoverFunc(func) {
     this.removeEffectsFunc = func
 }
 
-function vecProjectile::cargoRemoveEffects(cargo) {
+function VecModeBuilder::cargoRemoveEffects(cargo) { // todo: rename this
     this.removeEffectsFunc(cargo)
 }
 
-function vecProjectile::GetType() {
-    return this.type
+function VecModeBuilder::GetName() {
+    return this.name
 }
 
-function vecProjectile::GetColor() {
+function VecModeBuilder::GetColor() {
     return this.color
 }
 
 
 // Something more interesting
-function vecProjectile::Shoot(startPos, endPos, caller) {
+function VecModeBuilder::Shoot(startPos, endPos, caller) {
     local eventName = UniqueString("activeProjectile")
     local particleEnt = this._createProjectileParticle()
 
     caller.EmitSound("VecLauncher.Fire")
 
-    local projectile = launchedProjectile(particleEnt, eventName, this)
+    local projectile = LaunchedProjectile(particleEnt, eventName, this)
     local animationDuration = 0  
 
-    //? вынести?
+    // todo: док коммент, что рекурсионно обрабатываем порталы / отражения
+    ::LastBallMode = this
     for(local recursion = 0; recursion < recursionDepth; recursion++) {
-        local trace = TracePlus.PortalBbox(startPos, endPos, caller, TraceConfig , this)
+        local trace = TracePlus.PortalBbox(startPos, endPos, caller, TraceConfig)
 
-        local breakIt = false
+        local breakIt = false // todo: rename
         local portalTraces = trace.GetAggregatedPortalEntryInfo()
         foreach(iter, portalTrace in portalTraces.iter()) {
             animationDuration += projectile.moveBetween(portalTrace.GetStartPos(), portalTrace.GetHitPos(), animationDuration)
 
             local hitEnt = portalTrace.GetEntityClassname()
+            // todo comm: trigger_gravity - блокер, trigger_multiple это fizzler
             if(hitEnt == "trigger_gravity" || hitEnt == "prop_physics" || hitEnt == "trigger_multiple") {
-                endPos = portalTrace.GetHitpos()
+                endPos = portalTrace.GetHitPos()
                 breakIt = true
                 break 
             }
@@ -94,20 +101,20 @@ function vecProjectile::Shoot(startPos, endPos, caller) {
 
     projectile.SoftKill(animationDuration)
 
-    //* Основная обработка попадания vecball в куб
-    local hitFunc = function() : (endPos, handleHitFunc, particleEnt) {
-        local cargo = entLib.FindByModelWithin("models/props/puzzlebox.mdl", endPos, 25)
-        if(!cargo || !cargo.IsValid()) 
-            return particleEnt.EmitSound("ParticleBall.Explosion")
+    //* todo to eng: Основная обработка попадания vecball в куб
+    // local hitFunc = function(endPos, handleHitFunc, particleEnt) {
+    //     local cargo = entLib.FindByModelWithin("models/props/puzzlebox.mdl", endPos, 25)
+    //     if(!cargo || !cargo.IsValid()) 
+    //         return particleEnt.EmitSound("ParticleBall.Explosion")
 
-        handleHitFunc(vecBox(cargo))
-    }
-    ScheduleEvent.Add(eventName, hitFunc, animationDuration)
+    //     handleHitFunc(vecBox(cargo))
+    // }
+    // ScheduleEvent.Add(eventName, hitFunc, animationDuration, [endPos, handleHitFunc, particleEnt], this)
 
     return projectile
 }
 
-function vecProjectile::PlayParticle(particleName, originPos) {
+function VecModeBuilder::PlayParticle(particleName, originPos) {
     local particle = entLib.FindByName(macros.format("@{}-{}", this.name, particleName)) 
 
     particle.SetOrigin(originPos)
@@ -117,13 +124,13 @@ function vecProjectile::PlayParticle(particleName, originPos) {
     return particle
 }
 
-function vecProjectile::_createProjectileParticle() {
-    local prefix = dev.format("@{}-", this.type)
+function VecModeBuilder::_createProjectileParticle() {
+    local prefix = macros.format("@{}-", this.name)
 
     entLib.FindByName(prefix + "projectile-spawn").SpawnEntity()
     local particle = entLib.FindByName(prefix + "projectile")
 
-    particle.SetName(this.type)
+    particle.SetName(this.name)
     EntFireByHandle(particle, "Start")
     return particle
 }
@@ -134,22 +141,20 @@ function vecProjectile::_createProjectileParticle() {
 ::projectileCount <- List()
 
 // The object of the Projectile itself :>
-::launchedProjectile <- class {
+::LaunchedProjectile <- class {
     particleEnt = null;
     eventName = null;
-    vecType = null;
-    timeLife = 0;
+    modeBuilder = null;
 
-    constructor(particleEnt, eventName, vecProjectile) {
+    constructor(particleEnt, eventName, VecModeBuilder) {
         this.particleEnt = particleEnt
         this.eventName = eventName
-        this.vecType = vecProjectile
+        this.modeBuilder = VecModeBuilder
 
         // An optional functionality, created purely for the sake of optimization
         if(::projectileCount.len() > maxProjectilesOnMap) {
             local oldestProjectile = ::projectileCount.first()
-            if(oldestProjectile.IsValid()) 
-                oldestProjectile.Destroy()
+            if(oldestProjectile.IsValid()) oldestProjectile.Destroy()
             ::projectileCount.remove(0)
         }
         ::projectileCount.append(this)
@@ -171,12 +176,12 @@ function vecProjectile::_createProjectileParticle() {
     }
 
     function moveBetween(startPos, endPos, delay = 0) {
-        return animate.PositionTransitionBySpeed(this.particleEnt, startPos, endPos, 
-            projectileSpeed, {eventName = this.eventName, globalDelay = delay})
+        return animate.RT.PositionTransitionBySpeed(this.particleEnt, startPos, endPos, 
+            projectileSpeed, {eventName = this.eventName, globalDelay = delay}) // TODO: eventname opti
     }
 
-    function GetType() {
-        return this.vecType.type
+    function GetName() {
+        return this.modeBuilder.name
     }
 
     function GetOrigin() {

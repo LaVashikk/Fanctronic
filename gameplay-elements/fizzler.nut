@@ -5,11 +5,9 @@ local _playerFizzle = function(modeIdx) {
     vecgun.deactivateMode(modeIdx)
 }
 
-local _cubeFizzle = function(cargo, hardReset = false) {
-    if(cargo.GetMode() == null)
-        return
-
-    cargo.DeactivateMode(hardReset)
+local _cubeFizzle = function(cargo) {
+    if(cargo.GetMode() == null) return
+    cargo.DeactivateMode()
     cargo.EmitSound("VecBox.ClearShield")
 }
 
@@ -17,19 +15,22 @@ local _cubeFizzle = function(cargo, hardReset = false) {
 function vecFizzle(modeIdx = null) : (_playerFizzle, _cubeFizzle) {
     if(modeIdx == null)
         modeIdx = caller.GetHealth()
-    if(modeIdx == 999)
+    if(modeIdx == 999) {
         return vecFizzleAll()
+    }
         
     if(activator.GetClassname() == "player") 
         return _playerFizzle(modeIdx)
 
     local cargo = vecBox(activator)
-
-    if(cargo.GetMode() == projectileModes[modeIdx-1]) {
-        if(cargo.GetModeType() == "purple") //! hard code
-            return _cubeFizzle(cargo, false)
-        _cubeFizzle(cargo)
+    cargo.SetUserData("iWasDestroyedByFizzlerMode", projectileModes[modeIdx-1])
+    dev.info("new fizzled cargo {} ({}). mode: {}", cargo, cargo.GetModeName(), modeIdx)
+    if(cargo.GetModeName() == "purple") { //! hard-code
+        return cargo.GetMode().cargoRemoveEffects(cargo)
     }
+    if(cargo.GetMode() == projectileModes[modeIdx-1]) {
+        _cubeFizzle(cargo)
+    }    
 }
 
 
@@ -39,8 +40,9 @@ function vecFizzleAll() : (_cubeFizzle) {
             return vecgunOwners[activator].resetModes()
 
     local cargo = vecBox(activator)
-    if(cargo.GetModeType() == "purple") //! hardcode
-        return cargo.DeactivateMode(false)
+    if(cargo.GetModeName() == "purple") { //! hard-code
+        return cargo.GetMode().cargoRemoveEffects(cargo)
+    }
 
     _cubeFizzle(cargo)
 }

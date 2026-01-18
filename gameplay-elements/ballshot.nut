@@ -11,7 +11,7 @@ function setBallshoot(mode) : (ballshotsModes) {
     if(caller.GetUserData("particle"))
         caller.GetUserData("particle").Destroy()
     
-    local colorPrefix = "@" + vecball.GetType() + "-"
+    local colorPrefix = "@" + vecball.GetName() + "-"
     entLib.FindByName(colorPrefix + "ballshot-spawn").SpawnEntity()
     local baseFX = entLib.FindByName(colorPrefix + "ballshot-base")
     baseFX.SetUniqueName()
@@ -29,15 +29,14 @@ function BallShoot() : (ballshotsModes) {
 
     vecball.Shoot(start, end, caller)
 
-    // Sprite animate
+    // Sprite animate // todo
     local sprite = caller.GetNamePrefix() + "sprite"
-    animate.AlphaTransition(sprite, 50, 255, 0.1)
-    animate.AlphaTransition(sprite, 255, 50, 0.7, {globalDelay = 0.15})
-
+    animate.RT.AlphaTransition(sprite, 50, 255, 0.1, {eventName=UniqueString()})
+    animate.RT.AlphaTransition(sprite, 255, 50, 0.7, {eventName=UniqueString(), globalDelay = 0.15})
 
     local shotter = caller.GetNamePrefix() + "*"
-    local color = StrToVec(caller.GetColor())
-    local newColor = math.clampVector(color * 0.5)
-    animate.ColorTransition(shotter, color, newColor, 0.1)
-    animate.ColorTransition(shotter, newColor, color, 0.7, {globalDelay = 0.35})
+    local color = macros.StrToVec(caller.GetColor())
+    local newColor = math.vector.clamp(color * 0.5, 0, 255)
+    animate.RT.ColorTransition(shotter, color, newColor, 0.1. {eventName=UniqueString()})
+    animate.RT.ColorTransition(shotter, newColor, color, 0.7, {eventName=UniqueString(), globalDelay = 0.35})
 }
